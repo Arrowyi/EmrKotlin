@@ -27,34 +27,15 @@ class Emr(logPrintInterface: LogPrintInterface) {
 }
 
 object SafeCallEmr {
-    operator fun invoke(tag: String = "", msg: String = "") {
+    operator fun invoke(msg: String = "", tag: String = "") {
         log.print(tag, "expectation miss record : SafeCall failed -> $msg at : ${getFileNameAndLineNumber()}")
     }
 }
 
-fun <T> T.takeIfEmr(
-    tag: String = "", msg: String = "",
-    predicate: (T) -> Boolean
-): T? {
-    return if (predicate(this)) this else {
-        log.print(tag, "expectation miss record : take if failed -> $msg at : ${getFileNameAndLineNumber()}")
-        null
-    }
-}
-
-fun <T> T.takeUnlessEmr(
-    tag: String = "", msg: String = "",
-    predicate: (T) -> Boolean
-): T? {
-    return if (!predicate(this)) this else {
-        log.print(tag, "expectation miss record : take unless failed -> $msg at : ${getFileNameAndLineNumber()}")
-        null
-    }
-}
-
-fun <T> beTure(value: Boolean,
-    tag: String = "", msg: String = "",
-     action: () -> T
+fun <T> beTrue(
+    value: Boolean,
+    msg: String = "", tag: String = "",
+    action: () -> T
 ): T? {
     return if (value) action() else {
         log.print(tag, " expectation miss record : be true failed -> $msg at : ${getFileNameAndLineNumber()}")
@@ -62,20 +43,93 @@ fun <T> beTure(value: Boolean,
     }
 }
 
-fun <T> beFalse(value: Boolean,
-    tag: String = "", msg: String = "",
-     action: () -> T
+fun <T> beFalse(
+    value: Boolean,
+    msg: String = "", tag: String = "",
+    action: () -> T
 ): T? {
     return if (!value) action() else {
+        log.print(tag, " expectation miss record : be false failed -> $msg at : ${getFileNameAndLineNumber()}")
+        null
+    }
+}
+
+fun <T, R> notNull(
+    value: T,
+    msg: String = "", tag: String = "",
+    action: (T) -> R
+): R? {
+    return if (value != null) action(value) else {
+        log.print(tag, " expectation miss record : not null check failed -> $msg at : ${getFileNameAndLineNumber()}")
+        null
+    }
+}
+
+fun <T, R> beNull(
+    value: T,
+    msg: String = "", tag: String = "",
+    action: () -> R
+): R? {
+    return if (value == null) action() else {
+        log.print(tag, " expectation miss record : should null check failed -> $msg at : ${getFileNameAndLineNumber()}")
+        null
+    }
+}
+
+fun <T> notNull(
+    value: T,
+    msg: String = "", tag: String = "",
+): T? {
+    return if (value != null) value else {
+        log.print(tag, " expectation miss record : not null check failed -> $msg at : ${getFileNameAndLineNumber()}")
+        null
+    }
+}
+
+@JvmName("notNull1")
+fun <T, R> T.notNull(
+    msg: String = "", tag: String = "",
+    check: T.() -> R
+): R? {
+    val v = check(this)
+    return if (v != null) v else {
+        log.print(tag, " expectation miss record : not null check failed -> $msg at : ${getFileNameAndLineNumber()}")
+        null
+    }
+}
+
+
+fun <T> T.beTrue(
+    msg: String = "", tag: String = "",
+    check: T.() -> Boolean
+): T? {
+    return if (check(this)) this else {
+        log.print(tag, "expectation miss record : be true failed -> $msg at : ${getFileNameAndLineNumber()}")
+        null
+    }
+}
+
+fun <T> T.beFalse(
+    msg: String = "", tag: String = "",
+    check: T.() -> Boolean
+): T? {
+    return if (!check(this)) this else {
         log.print(tag, "expectation miss record : be false failed -> $msg at : ${getFileNameAndLineNumber()}")
         null
     }
 }
 
+
 private fun getFileNameAndLineNumber(): String {
     val throwable = Throwable()
     val element: StackTraceElement = throwable.stackTrace[3]
+    val sb = StringBuffer()
+    for (i in throwable.stackTrace.indices) {
+        sb.append(throwable.stackTrace[i])
+        sb.append(System.lineSeparator())
+        if (i > 6) break
+    }
 
-    return "${element.fileName} , ${element.className}, ${element.methodName}, ${element.lineNumber} ${System.lineSeparator()} ${throwable.stackTraceToString()}"
+    return "${element.fileName} , ${element.className}, ${element.methodName}, ${element.lineNumber} ${System.lineSeparator()} $sb"
 
 }

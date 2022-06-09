@@ -20,13 +20,14 @@ package indi.arrowyi
 import indi.arrowyi.emr.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
-private class TestClass (val value : Boolean, val intValue : Int)
-
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 
 class EmrTest {
     @BeforeEach
-    fun setUp(){
+    fun setUp() {
         Emr(object : LogPrintInterface {
             override fun print(tag: String, msg: String) {
                 println("$tag : $msg")
@@ -34,20 +35,63 @@ class EmrTest {
         })
     }
 
+    @Test
+    fun testNotNull() {
+        class A(val valueA: Int)
+        class B(val valueB: Int, val a: A?)
+        class C(val valueC: Int, val b: B?)
+
+        val c: C? = C(3, B(2, A(1)))
+
+        notNull(c)
+            ?.notNull { b }
+            ?.notNull { a }
+            ?.let {
+                println("valueA = ${it.valueA}")
+                assertEquals(1, it.valueA)
+            }
+
+        val c2: C? = C(3, B(2, null))
+        notNull(c2)
+            ?.notNull { b }
+            ?.notNull { a }
+            ?.let {
+                println("valueA = ${it.valueA}")
+                assertFails("should not call here") {}
+            }
+
+        notNull(c2) {
+            //do something with c2
+            assertNotNull(c2)
+        }
+
+    }
 
     @Test
-    fun testPrint()
-    {
-        var a : TestClass? = null
+    fun testBeTrue() {
+        class A(val valueA: Boolean)
+        class B(val valueB: Boolean, val a: A?)
+        class C(val valueC: Boolean, val b: B?)
 
-        a?.takeIfEmr { a!!.value } ?: SafeCallEmr()
+        val c: C? = C(true, B(false, A(false)))
+        notNull(c)
+            ?.beTrue { valueC }
+            ?.notNull { b }
+            ?.beTrue { valueB }
+            ?.notNull { a }
+            ?.beTrue { valueA }
+            ?.run {
+                println("valueA = $valueA")
+                assertFails("should not call here") {
 
-        a = TestClass(false, 0)
+                }
+            }
 
-        beFalse(a.value){
-            println("a.vlaue is true")
-            a.intValue
-        }?.let { println("$it") }
+        val cond = true
+
+        beTrue(cond) {
+            //do something
+        }
     }
 
 
